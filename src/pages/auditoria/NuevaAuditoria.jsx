@@ -4,6 +4,8 @@ import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 
 import { useAuth } from '../../context/AuthContext';
 import { subirFoto } from '../../lib/cloudinary';
 
+const TURNOS = ['Mañana', 'Tarde', 'Noche'];
+
 function useVehiculos() {
   const [vehiculos, setVehiculos] = useState([]);
   useEffect(() => {
@@ -84,6 +86,7 @@ export default function NuevaAuditoria() {
 
   const [busqueda,    setBusqueda]    = useState('');
   const [matricula,   setMatricula]   = useState('');
+  const [turno,       setTurno]       = useState('');
   const [operario,    setOperario]    = useState('');
   const [cargador,    setCargador]    = useState('');
   const [checklist,   setChecklist]   = useState({});
@@ -97,6 +100,10 @@ export default function NuevaAuditoria() {
     ? vehiculos.filter(v => v.matricula.includes(busqueda.toUpperCase())).slice(0, 8)
     : [];
 
+  const operariosFiltrados = turno
+    ? config.operarios.filter(o => o.turno === turno)
+    : [];
+
   const setItem = (zona, nombre, val) => {
     setChecklist(prev => ({ ...prev, [`${zona}__${nombre}`]: { zona, nombre, ...val } }));
   };
@@ -104,6 +111,7 @@ export default function NuevaAuditoria() {
 
   const handleSubmit = async () => {
     if (!matricula)    { setError('Selecciona una matrícula.'); return; }
+    if (!turno)        { setError('Selecciona un turno.'); return; }
     if (!operario)     { setError('Selecciona un operario.'); return; }
     if (!cargador)     { setError('Selecciona un cargador.'); return; }
     if (!estadoGlobal) { setError('Marca el estado global.'); return; }
@@ -116,19 +124,20 @@ export default function NuevaAuditoria() {
     try {
       await addDoc(collection(db, `tenants/${TENANT_ID}/auditorias_limpieza`), {
         matricula,
+        turno,
         operario,
         cargador,
-        auditor:      profile?.nombre || '',
-        auditorId:    profile?.uid || '',
-        checklist:    Object.values(checklist),
+        auditor:   profile?.nombre || '',
+        auditorId: profile?.uid || '',
+        checklist: Object.values(checklist),
         estadoGlobal,
         notaGlobal,
-        creadoEn:     serverTimestamp(),
+        creadoEn:  serverTimestamp(),
       });
       setDone(true);
       setTimeout(() => {
-        setMatricula(''); setBusqueda(''); setOperario(''); setCargador('');
-        setChecklist({}); setEstadoGlobal(''); setNotaGlobal(''); setDone(false);
+        setMatricula(''); setBusqueda(''); setTurno(''); setOperario('');
+        setCargador(''); setChecklist({}); setEstadoGlobal(''); setNotaGlobal(''); setDone(false);
       }, 3000);
     } catch (err) { setError('Error al guardar: ' + err.message); }
     finally { setLoading(false); }
@@ -162,18 +171,31 @@ export default function NuevaAuditoria() {
             ))}
           </div>
         )}
-        {matricula && (
-          <div style={{ marginTop: 6, fontSize: 12, color: '#3fb950' }}>✓ {matricula} seleccionada</div>
-        )}
+        {matricula && <div style={{ marginTop: 6, fontSize: 12, color: '#3fb950' }}>✓ {matricula} seleccionada</div>}
+      </div>
+
+      <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+        <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Turno</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {TURNOS.map(t => (
+            <button key={t} onClick={() => { setTurno(t); setOperario(''); }}
+              style={{ flex: 1, padding: '10px', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: '0.5px solid',
+                background: turno === t ? 'rgba(88,166,255,0.15)' : 'transparent',
+                color: turno === t ? '#58a6ff' : '#8b949e',
+                borderColor: turno === t ? '#58a6ff' : '#21262d' }}>
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: 16 }}>
           <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Operario de limpieza</div>
-          <select value={operario} onChange={e => setOperario(e.target.value)}
-            style={{ width: '100%', background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: operario ? '#e6edf3' : '#8b949e' }}>
-            <option value="">Seleccionar...</option>
-            {config.operarios.map(o => <option key={o.id} value={o.nombre}>{o.nombre}</option>)}
+          <select value={operario} onChange={e => setOperario(e.target.value)} disabled={!turno}
+            style={{ width: '100%', background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: operario ? '#e6edf3' : '#8b949e', opacity: turno ? 1 : 0.5 }}>
+            <option value="">{turno ? 'Seleccionar...' : 'Selecciona un turno primero'}</option>
+            {operariosFiltrados.map(o => <option key={o.id} value={o.nombre}>{o.nombre}</option>)}
           </select>
         </div>
         <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: 16 }}>
