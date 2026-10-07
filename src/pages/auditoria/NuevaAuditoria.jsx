@@ -30,34 +30,50 @@ function useConfig() {
 }
 
 function FotosUpload({ fotos, onChange }) {
+  const [subiendo, setSubiendo] = useState(false);
+  const [errorFoto, setErrorFoto] = useState('');
+
   const handleFoto = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setSubiendo(true); setErrorFoto('');
     try {
       const foto = await subirFoto(file);
       onChange([...fotos, foto]);
-    } catch { }
+    } catch (err) {
+      setErrorFoto('Error al subir foto. Inténtalo de nuevo.');
+    } finally {
+      setSubiendo(false);
+      e.target.value = '';
+    }
   };
 
   const removeFoto = (i) => onChange(fotos.filter((_, j) => j !== i));
 
   return (
     <div style={{ marginTop: 8 }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
-        {fotos.map((f, i) => (
-          <div key={i} style={{ position: 'relative' }}>
-            <img src={f.url} alt="" style={{ width: 60, height: 45, objectFit: 'cover', borderRadius: 6 }} />
-            <button onClick={() => removeFoto(i)}
-              style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: 99, background: '#f85149', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              ✕
-            </button>
-          </div>
-        ))}
-      </div>
-      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', background: 'rgba(248,81,73,0.08)', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#f85149' }}>
-        📷 {fotos.length === 0 ? 'Foto requerida — toca para subir' : '+ Añadir otra foto'}
-        <input type="file" accept="image/*" capture="environment" onChange={handleFoto} style={{ display: 'none' }} />
+      {fotos.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          {fotos.map((f, i) => (
+            <div key={i} style={{ position: 'relative' }}>
+              <img src={f.url} alt="" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1.5px solid #3fb950' }} />
+              <div style={{ position: 'absolute', top: -4, left: -4, width: 16, height: 16, borderRadius: 99, background: '#3fb950', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff' }}>✓</div>
+              <button onClick={() => removeFoto(i)}
+                style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: 99, background: '#f85149', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer' }}>
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+        background: subiendo ? 'rgba(88,166,255,0.1)' : fotos.length === 0 ? 'rgba(248,81,73,0.08)' : 'rgba(63,185,80,0.08)',
+        borderRadius: 6, cursor: subiendo ? 'not-allowed' : 'pointer', fontSize: 12,
+        color: subiendo ? '#58a6ff' : fotos.length === 0 ? '#f85149' : '#3fb950' }}>
+        {subiendo ? '⏳ Subiendo...' : fotos.length === 0 ? '📷 Foto requerida — toca para subir' : '📷 + Añadir otra foto'}
+        <input type="file" accept="image/*" capture="environment" onChange={handleFoto} disabled={subiendo} style={{ display: 'none' }} />
       </label>
+      {errorFoto && <div style={{ fontSize: 11, color: '#f85149', marginTop: 4 }}>{errorFoto}</div>}
     </div>
   );
 }
@@ -206,8 +222,14 @@ export default function NuevaAuditoria() {
     if (!cargador)  { setError('Selecciona un cargador.'); return; }
 
     const items = Object.values(checklist);
-    const sinFoto = items.filter(i => (i.estado === 'Mal' || i.estado === 'Falta algún repuesto') && (!i.fotos || i.fotos.length === 0));
-    if (sinFoto.length > 0) { setError(`Faltan fotos en: ${sinFoto.map(i => i.nombre).join(', ')}`); return; }
+    const sinFoto = items.filter(i =>
+      (i.estado === 'Mal' || i.estado === 'Falta algún repuesto') &&
+      (!i.fotos || i.fotos.length === 0)
+    );
+    if (sinFoto.length > 0) {
+      setError(`Faltan fotos en: ${sinFoto.map(i => i.nombre).join(', ')}`);
+      return;
+    }
 
     setLoading(true); setError('');
     try {
