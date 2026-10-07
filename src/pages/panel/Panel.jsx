@@ -94,9 +94,9 @@ function ModalDetalle({ auditoria, onClose, isManager, config }) {
   const [loadingContra,   setLoadingContra]   = useState(false);
   const [errorContra,     setErrorContra]     = useState('');
   const [doneContra,      setDoneContra]      = useState(false);
-  const [viajePrueba,     setViajePrueba]     = useState(auditoria?.viajePrueba || '');
-  const [loadingViaje,    setLoadingViaje]    = useState(false);
-  const [savedViaje,      setSavedViaje]      = useState(!!auditoria?.viajePrueba);
+  const [tripUrl,         setTripUrl]         = useState(auditoria?.tripUrl || '');
+  const [loadingTrip,     setLoadingTrip]     = useState(false);
+  const [savedTrip,       setSavedTrip]       = useState(!!auditoria?.tripUrl);
   const { profile } = useAuth();
 
   if (!auditoria) return null;
@@ -118,17 +118,17 @@ function ModalDetalle({ auditoria, onClose, isManager, config }) {
     } catch { }
   };
 
-  const handleGuardarViaje = async () => {
-    if (!viajePrueba.trim()) return;
-    setLoadingViaje(true);
+  const handleGuardarTrip = async () => {
+    if (!tripUrl.trim()) return;
+    setLoadingTrip(true);
     try {
       await updateDoc(doc(db, `tenants/${TENANT_ID}/auditorias_limpieza`, auditoria.id), {
-        viajePrueba: viajePrueba.trim(),
-        viajePruebaEn: serverTimestamp(),
+        tripUrl:   tripUrl.trim(),
+        tripUrlEn: serverTimestamp(),
       });
-      setSavedViaje(true);
+      setSavedTrip(true);
     } catch { }
-    finally { setLoadingViaje(false); }
+    finally { setLoadingTrip(false); }
   };
 
   const handleGuardarContra = async () => {
@@ -239,7 +239,12 @@ function ModalDetalle({ auditoria, onClose, isManager, config }) {
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               {fallos > 0 && <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 99, background: 'rgba(248,81,73,0.15)', color: '#f85149' }}>{fallos} fallos</span>}
-              {auditoria.viajePrueba && <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 99, background: 'rgba(63,185,80,0.1)', color: '#3fb950' }}>🚗 {auditoria.viajePrueba}</span>}
+              {auditoria.tripUrl && (
+                <a href={auditoria.tripUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 99, background: 'rgba(63,185,80,0.1)', color: '#3fb950', textDecoration: 'none' }}>
+                  🚗 Trip
+                </a>
+              )}
               {isManager && (
                 <button onClick={handleEliminar}
                   style={{ padding: '5px 10px', borderRadius: 8, border: '0.5px solid rgba(248,81,73,0.3)', background: 'rgba(248,81,73,0.1)', color: '#f85149', fontSize: 12, cursor: 'pointer' }}>
@@ -269,31 +274,37 @@ function ModalDetalle({ auditoria, onClose, isManager, config }) {
               <>
                 {isManager && (
                   <div style={{ background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
-                    <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Viaje de prueba</div>
-                    {savedViaje ? (
+                    <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Trip</div>
+                    {savedTrip ? (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontFamily: 'monospace', fontSize: 14, color: '#3fb950' }}>🚗 {viajePrueba}</span>
-                        <button onClick={() => setSavedViaje(false)}
-                          style={{ fontSize: 11, color: '#8b949e', background: 'none', border: 'none', cursor: 'pointer' }}>Editar</button>
+                        <a href={tripUrl} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: 13, color: '#58a6ff', textDecoration: 'none', wordBreak: 'break-all' }}>
+                          🚗 {tripUrl}
+                        </a>
+                        <button onClick={() => setSavedTrip(false)}
+                          style={{ fontSize: 11, color: '#8b949e', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 8, flexShrink: 0 }}>Editar</button>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <input type="text" value={viajePrueba} onChange={e => setViajePrueba(e.target.value)}
-                          placeholder="ID del viaje de prueba..."
+                        <input type="url" value={tripUrl} onChange={e => setTripUrl(e.target.value)}
+                          placeholder="https://..."
                           style={{ flex: 1, background: '#161b22', border: '0.5px solid #21262d', borderRadius: 8, padding: '8px 10px', fontSize: 13, color: '#e6edf3' }} />
-                        <button onClick={handleGuardarViaje} disabled={loadingViaje || !viajePrueba.trim()}
-                          style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: viajePrueba.trim() ? '#58a6ff' : '#21262d', color: viajePrueba.trim() ? '#fff' : '#8b949e', fontSize: 13, cursor: 'pointer' }}>
-                          {loadingViaje ? '...' : 'Guardar'}
+                        <button onClick={handleGuardarTrip} disabled={loadingTrip || !tripUrl.trim()}
+                          style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: tripUrl.trim() ? '#58a6ff' : '#21262d', color: tripUrl.trim() ? '#fff' : '#8b949e', fontSize: 13, cursor: 'pointer' }}>
+                          {loadingTrip ? '...' : 'Guardar'}
                         </button>
                       </div>
                     )}
                   </div>
                 )}
 
-                {!isManager && auditoria.viajePrueba && (
+                {!isManager && auditoria.tripUrl && (
                   <div style={{ background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
-                    <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Viaje de prueba</div>
-                    <span style={{ fontFamily: 'monospace', fontSize: 14, color: '#3fb950' }}>🚗 {auditoria.viajePrueba}</span>
+                    <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Trip</div>
+                    <a href={auditoria.tripUrl} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: 13, color: '#58a6ff', textDecoration: 'none', wordBreak: 'break-all' }}>
+                      🚗 {auditoria.tripUrl}
+                    </a>
                   </div>
                 )}
 
@@ -540,7 +551,7 @@ export default function Panel() {
                       <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: '#e6edf3' }}>{a.matricula}</span>
                       <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: '#21262d', color: '#8b949e' }}>{a.turno}</span>
                       {fallos > 0 && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'rgba(248,81,73,0.1)', color: '#f85149' }}>{fallos} fallos</span>}
-                      {a.viajePrueba && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'rgba(63,185,80,0.1)', color: '#3fb950' }}>🚗 viaje</span>}
+                      {a.tripUrl && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'rgba(63,185,80,0.1)', color: '#3fb950' }}>🚗 Trip</span>}
                     </div>
                     <div style={{ fontSize: 12, color: '#8b949e', marginTop: 2 }}>
                       {a.operario} · {a.auditor} · {formatFecha(a.creadoEn)}
