@@ -2,9 +2,9 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const NAV = [
-  { to: '/',              icon: '📋', label: 'Nueva auditoría' },
-  { to: '/historial',     icon: '🕐', label: 'Historial' },
-  { to: '/configuracion', icon: '⚙️', label: 'Configuración' },
+  { to: '/',       icon: '📋', label: 'Nueva auditoría' },
+  { to: '/panel',  icon: '📊', label: 'Panel' },
+  { to: '/config', icon: '⚙️', label: 'Configuración' },
 ];
 
 export default function Layout({ children }) {
