@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db, TENANT_ID } from '../../lib/firebase';
-import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
-import { proxiarFoto } from '../../lib/cloudinary';
-import { subirFoto } from '../../lib/cloudinary';
+import { proxiarFoto, subirFoto } from '../../lib/cloudinary';
 
 function useAuditorias() {
   const [auditorias, setAuditorias] = useState([]);
@@ -73,12 +72,12 @@ function FotosUpload({ fotos, onChange }) {
 }
 
 function ModalDetalle({ auditoria, onClose, isManager, config }) {
-  const [fotoAmp,       setFotoAmp]       = useState(null);
-  const [mostrando,     setMostrando]     = useState('auditoria');
+  const [fotoAmp,         setFotoAmp]         = useState(null);
+  const [mostrando,       setMostrando]       = useState('auditoria');
   const [contraChecklist, setContraChecklist] = useState({});
-  const [loadingContra, setLoadingContra] = useState(false);
-  const [errorContra,   setErrorContra]   = useState('');
-  const [doneContra,    setDoneContra]    = useState(false);
+  const [loadingContra,   setLoadingContra]   = useState(false);
+  const [errorContra,     setErrorContra]     = useState('');
+  const [doneContra,      setDoneContra]      = useState(false);
   const { profile } = useAuth();
 
   if (!auditoria) return null;
@@ -210,13 +209,13 @@ function ModalDetalle({ auditoria, onClose, isManager, config }) {
 
           {isManager && (
             <div style={{ display: 'flex', gap: 0, margin: '16px 24px 0', borderBottom: '0.5px solid #21262d' }}>
-              {['auditoria', 'contrauditoria'].map(tab => (
-                <button key={tab} onClick={() => setMostrando(tab)}
+              {['auditoria', 'contrauditoria'].map(t => (
+                <button key={t} onClick={() => setMostrando(t)}
                   style={{ padding: '8px 16px', fontSize: 13, cursor: 'pointer', border: 'none', background: 'none',
-                    color: mostrando === tab ? '#58a6ff' : '#8b949e',
-                    borderBottom: `2px solid ${mostrando === tab ? '#58a6ff' : 'transparent'}`,
+                    color: mostrando === t ? '#58a6ff' : '#8b949e',
+                    borderBottom: `2px solid ${mostrando === t ? '#58a6ff' : 'transparent'}`,
                     marginBottom: -1 }}>
-                  {tab === 'auditoria' ? 'Auditoría' : 'Contrauditoría'}
+                  {t === 'auditoria' ? 'Auditoría' : 'Contrauditoría'}
                 </button>
               ))}
             </div>
@@ -328,36 +327,25 @@ export default function Panel() {
     return f > hace30dias;
   }), [auditorias, hace30dias]);
 
-  const porTurno = useMemo(() => {
-    const turnos = ['Mañana', 'Tarde', 'Noche'];
-    return turnos.map(t => ({
-      turno: t,
-      total: auditoriasMes.filter(a => a.turno === t).length,
-    }));
-  }, [auditoriasMes]);
+  const porTurno = useMemo(() => ['Mañana', 'Tarde', 'Noche'].map(t => ({
+    turno: t,
+    total: auditoriasMes.filter(a => a.turno === t).length,
+  })), [auditoriasMes]);
 
   const alertasOperarios = useMemo(() => {
     const conteo = {};
     auditoriasMes.forEach(a => {
-      const fallos = contarFallos(a);
-      if (fallos >= 2) {
-        if (!conteo[a.operario]) conteo[a.operario] = 0;
-        conteo[a.operario]++;
-      }
+      if (contarFallos(a) >= 2) conteo[a.operario] = (conteo[a.operario] || 0) + 1;
     });
-    return Object.entries(conteo)
-      .filter(([, c]) => c >= 3)
-      .map(([op, c]) => ({ operario: op, count: c }))
-      .sort((a, b) => b.count - a.count);
+    return Object.entries(conteo).filter(([, c]) => c >= 3).map(([op, c]) => ({ operario: op, count: c })).sort((a, b) => b.count - a.count);
   }, [auditoriasMes]);
 
   const rankingPartes = useMemo(() => {
     const conteo = {};
     auditoriasMes.forEach(a => {
       (a.checklist || []).forEach(item => {
-        if (item.estado === 'Mal' || item.estado === 'Falta algún repuesto') {
+        if (item.estado === 'Mal' || item.estado === 'Falta algún repuesto')
           conteo[item.nombre] = (conteo[item.nombre] || 0) + 1;
-        }
       });
     });
     return Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([nombre, count]) => ({ nombre, count }));
@@ -383,7 +371,6 @@ export default function Panel() {
 
       {tab === 'dashboard' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
             {porTurno.map(({ turno, total }) => (
               <div key={turno} style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: '14px 16px' }}>
@@ -425,9 +412,7 @@ export default function Panel() {
           )}
 
           {rankingPartes.length === 0 && alertasOperarios.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 13, color: '#8b949e' }}>
-              Sin datos suficientes aún
-            </div>
+            <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 13, color: '#8b949e' }}>Sin datos suficientes aún</div>
           )}
         </div>
       )}
