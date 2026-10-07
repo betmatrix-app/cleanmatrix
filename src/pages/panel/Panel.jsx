@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db, TENANT_ID } from '../../lib/firebase';
-import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { proxiarFoto, subirFoto } from '../../lib/cloudinary';
 
@@ -41,32 +41,48 @@ function contarFallos(auditoria) {
 }
 
 function FotosUpload({ fotos, onChange }) {
+  const [subiendo,  setSubiendo]  = useState(false);
+  const [errorFoto, setErrorFoto] = useState('');
+
   const handleFoto = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setSubiendo(true); setErrorFoto('');
     try {
       const foto = await subirFoto(file);
       onChange([...fotos, foto]);
-    } catch { }
+    } catch {
+      setErrorFoto('Error al subir foto. Inténtalo de nuevo.');
+    } finally {
+      setSubiendo(false);
+      e.target.value = '';
+    }
   };
+
   const removeFoto = (i) => onChange(fotos.filter((_, j) => j !== i));
+
   return (
     <div style={{ marginTop: 8 }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
-        {fotos.map((f, i) => (
-          <div key={i} style={{ position: 'relative' }}>
-            <img src={proxiarFoto(f.url)} alt="" style={{ width: 60, height: 45, objectFit: 'cover', borderRadius: 6 }} />
-            <button onClick={() => removeFoto(i)}
-              style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: 99, background: '#f85149', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer' }}>
-              ✕
-            </button>
-          </div>
-        ))}
-      </div>
-      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', background: 'rgba(248,81,73,0.08)', borderRadius: 6, cursor: 'pointer', fontSize: 12, color: '#f85149' }}>
-        📷 {fotos.length === 0 ? 'Foto requerida' : '+ Añadir foto'}
-        <input type="file" accept="image/*" capture="environment" onChange={handleFoto} style={{ display: 'none' }} />
+      {fotos.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          {fotos.map((f, i) => (
+            <div key={i} style={{ position: 'relative' }}>
+              <img src={proxiarFoto(f.url)} alt="" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1.5px solid #3fb950' }} />
+              <div style={{ position: 'absolute', top: -4, left: -4, width: 16, height: 16, borderRadius: 99, background: '#3fb950', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff' }}>✓</div>
+              <button onClick={() => removeFoto(i)}
+                style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: 99, background: '#f85149', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer' }}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+        background: subiendo ? 'rgba(88,166,255,0.1)' : fotos.length === 0 ? 'rgba(248,81,73,0.08)' : 'rgba(63,185,80,0.08)',
+        borderRadius: 6, cursor: subiendo ? 'not-allowed' : 'pointer', fontSize: 12,
+        color: subiendo ? '#58a6ff' : fotos.length === 0 ? '#f85149' : '#3fb950' }}>
+        {subiendo ? '⏳ Subiendo...' : fotos.length === 0 ? '📷 Foto requerida' : '📷 + Añadir foto'}
+        <input type="file" accept="image/*" capture="environment" onChange={handleFoto} disabled={subiendo} style={{ display: 'none' }} />
       </label>
+      {errorFoto && <div style={{ fontSize: 11, color: '#f85149', marginTop: 4 }}>{errorFoto}</div>}
     </div>
   );
 }
@@ -90,6 +106,14 @@ function ModalDetalle({ auditoria, onClose, isManager, config }) {
   const setContraItem = (zona, nombre, val) =>
     setContraChecklist(prev => ({ ...prev, [`${zona}__${nombre}`]: { zona, nombre, ...val } }));
   const getContraItem = (zona, nombre) => contraChecklist[`${zona}__${nombre}`] || {};
+
+  const handleEliminar = async () => {
+    if (!window.confirm('Eliminar esta auditoría?')) return;
+    try {
+      await deleteDoc(doc(db, `tenants/${TENANT_ID}/auditorias_limpieza`, auditoria.id));
+      onClose();
+    } catch { }
+  };
 
   const handleGuardarContra = async () => {
     const items = Object.values(contraChecklist);
@@ -194,15 +218,17 @@ function ModalDetalle({ auditoria, onClose, isManager, config }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px 0' }}>
             <div>
               <div style={{ fontFamily: 'monospace', fontSize: 18, fontWeight: 600, color: '#e6edf3' }}>{auditoria.matricula}</div>
-              <div style={{ fontSize: 12, color: '#8b949e', marginTop: 2 }}>
-                {auditoria.turno} · {auditoria.operario} · {auditoria.cargador}
-              </div>
-              <div style={{ fontSize: 12, color: '#484f58', marginTop: 2 }}>
-                Auditado por: {auditoria.auditor} · {formatFecha(auditoria.creadoEn)}
-              </div>
+              <div style={{ fontSize: 12, color: '#8b949e', marginTop: 2 }}>{auditoria.turno} · {auditoria.operario} · {auditoria.cargador}</div>
+              <div style={{ fontSize: 12, color: '#484f58', marginTop: 2 }}>Auditado por: {auditoria.auditor} · {formatFecha(auditoria.creadoEn)}</div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               {fallos > 0 && <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 99, background: 'rgba(248,81,73,0.15)', color: '#f85149' }}>{fallos} fallos</span>}
+              {isManager && (
+                <button onClick={handleEliminar}
+                  style={{ padding: '5px 10px', borderRadius: 8, border: '0.5px solid rgba(248,81,73,0.3)', background: 'rgba(248,81,73,0.1)', color: '#f85149', fontSize: 12, cursor: 'pointer' }}>
+                  Eliminar
+                </button>
+              )}
               <button onClick={onClose} style={{ padding: '5px 10px', borderRadius: 8, border: '0.5px solid #21262d', background: 'none', color: '#8b949e', fontSize: 12, cursor: 'pointer' }}>Cerrar</button>
             </div>
           </div>
