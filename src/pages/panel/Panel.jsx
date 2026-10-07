@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db, TENANT_ID } from '../../lib/firebase';
-import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { proxiarFoto, subirFoto } from '../../lib/cloudinary';
 
@@ -94,6 +94,9 @@ function ModalDetalle({ auditoria, onClose, isManager, config }) {
   const [loadingContra,   setLoadingContra]   = useState(false);
   const [errorContra,     setErrorContra]     = useState('');
   const [doneContra,      setDoneContra]      = useState(false);
+  const [viajePrueba,     setViajePrueba]     = useState(auditoria?.viajePrueba || '');
+  const [loadingViaje,    setLoadingViaje]    = useState(false);
+  const [savedViaje,      setSavedViaje]      = useState(!!auditoria?.viajePrueba);
   const { profile } = useAuth();
 
   if (!auditoria) return null;
@@ -113,6 +116,19 @@ function ModalDetalle({ auditoria, onClose, isManager, config }) {
       await deleteDoc(doc(db, `tenants/${TENANT_ID}/auditorias_limpieza`, auditoria.id));
       onClose();
     } catch { }
+  };
+
+  const handleGuardarViaje = async () => {
+    if (!viajePrueba.trim()) return;
+    setLoadingViaje(true);
+    try {
+      await updateDoc(doc(db, `tenants/${TENANT_ID}/auditorias_limpieza`, auditoria.id), {
+        viajePrueba: viajePrueba.trim(),
+        viajePruebaEn: serverTimestamp(),
+      });
+      setSavedViaje(true);
+    } catch { }
+    finally { setLoadingViaje(false); }
   };
 
   const handleGuardarContra = async () => {
@@ -223,6 +239,7 @@ function ModalDetalle({ auditoria, onClose, isManager, config }) {
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               {fallos > 0 && <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 99, background: 'rgba(248,81,73,0.15)', color: '#f85149' }}>{fallos} fallos</span>}
+              {auditoria.viajePrueba && <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 99, background: 'rgba(63,185,80,0.1)', color: '#3fb950' }}>🚗 {auditoria.viajePrueba}</span>}
               {isManager && (
                 <button onClick={handleEliminar}
                   style={{ padding: '5px 10px', borderRadius: 8, border: '0.5px solid rgba(248,81,73,0.3)', background: 'rgba(248,81,73,0.1)', color: '#f85149', fontSize: 12, cursor: 'pointer' }}>
@@ -250,6 +267,36 @@ function ModalDetalle({ auditoria, onClose, isManager, config }) {
           <div style={{ padding: '16px 24px 24px' }}>
             {mostrando === 'auditoria' ? (
               <>
+                {isManager && (
+                  <div style={{ background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
+                    <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Viaje de prueba</div>
+                    {savedViaje ? (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontFamily: 'monospace', fontSize: 14, color: '#3fb950' }}>🚗 {viajePrueba}</span>
+                        <button onClick={() => setSavedViaje(false)}
+                          style={{ fontSize: 11, color: '#8b949e', background: 'none', border: 'none', cursor: 'pointer' }}>Editar</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input type="text" value={viajePrueba} onChange={e => setViajePrueba(e.target.value)}
+                          placeholder="ID del viaje de prueba..."
+                          style={{ flex: 1, background: '#161b22', border: '0.5px solid #21262d', borderRadius: 8, padding: '8px 10px', fontSize: 13, color: '#e6edf3' }} />
+                        <button onClick={handleGuardarViaje} disabled={loadingViaje || !viajePrueba.trim()}
+                          style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: viajePrueba.trim() ? '#58a6ff' : '#21262d', color: viajePrueba.trim() ? '#fff' : '#8b949e', fontSize: 13, cursor: 'pointer' }}>
+                          {loadingViaje ? '...' : 'Guardar'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!isManager && auditoria.viajePrueba && (
+                  <div style={{ background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
+                    <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Viaje de prueba</div>
+                    <span style={{ fontFamily: 'monospace', fontSize: 14, color: '#3fb950' }}>🚗 {auditoria.viajePrueba}</span>
+                  </div>
+                )}
+
                 {interior.length > 0 && (
                   <>
                     <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, margin: '8px 0 6px' }}>Interior</div>
@@ -493,6 +540,7 @@ export default function Panel() {
                       <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: '#e6edf3' }}>{a.matricula}</span>
                       <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: '#21262d', color: '#8b949e' }}>{a.turno}</span>
                       {fallos > 0 && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'rgba(248,81,73,0.1)', color: '#f85149' }}>{fallos} fallos</span>}
+                      {a.viajePrueba && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'rgba(63,185,80,0.1)', color: '#3fb950' }}>🚗 viaje</span>}
                     </div>
                     <div style={{ fontSize: 12, color: '#8b949e', marginTop: 2 }}>
                       {a.operario} · {a.auditor} · {formatFecha(a.creadoEn)}
