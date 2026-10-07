@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { subirFoto } from '../../lib/cloudinary';
 
 const TURNOS = ['Mañana', 'Tarde', 'Noche'];
+const isMobile = () => window.innerWidth < 768;
 
 function useVehiculos() {
   const [vehiculos, setVehiculos] = useState([]);
@@ -30,8 +31,9 @@ function useConfig() {
 }
 
 function FotosUpload({ fotos, onChange }) {
-  const [subiendo, setSubiendo] = useState(false);
+  const [subiendo,  setSubiendo]  = useState(false);
   const [errorFoto, setErrorFoto] = useState('');
+  const mobile = isMobile();
 
   const handleFoto = async (e) => {
     const file = e.target.files[0];
@@ -40,7 +42,7 @@ function FotosUpload({ fotos, onChange }) {
     try {
       const foto = await subirFoto(file);
       onChange([...fotos, foto]);
-    } catch (err) {
+    } catch {
       setErrorFoto('Error al subir foto. Inténtalo de nuevo.');
     } finally {
       setSubiendo(false);
@@ -51,43 +53,43 @@ function FotosUpload({ fotos, onChange }) {
   const removeFoto = (i) => onChange(fotos.filter((_, j) => j !== i));
 
   return (
-    <div style={{ marginTop: 8 }}>
+    <div style={{ marginTop: 10 }}>
       {fotos.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
           {fotos.map((f, i) => (
             <div key={i} style={{ position: 'relative' }}>
-              <img src={f.url} alt="" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1.5px solid #3fb950' }} />
-              <div style={{ position: 'absolute', top: -4, left: -4, width: 16, height: 16, borderRadius: 99, background: '#3fb950', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff' }}>✓</div>
+              <img src={f.url} alt="" style={{ width: mobile ? 80 : 64, height: mobile ? 60 : 48, objectFit: 'cover', borderRadius: 8, border: '2px solid #3fb950' }} />
+              <div style={{ position: 'absolute', top: -5, left: -5, width: 18, height: 18, borderRadius: 99, background: '#3fb950', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff' }}>✓</div>
               <button onClick={() => removeFoto(i)}
-                style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: 99, background: '#f85149', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer' }}>
-                ✕
-              </button>
+                style={{ position: 'absolute', top: -5, right: -5, width: 18, height: 18, borderRadius: 99, background: '#f85149', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer' }}>✕</button>
             </div>
           ))}
         </div>
       )}
-      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px',
+      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: mobile ? '10px 16px' : '6px 12px',
         background: subiendo ? 'rgba(88,166,255,0.1)' : fotos.length === 0 ? 'rgba(248,81,73,0.08)' : 'rgba(63,185,80,0.08)',
-        borderRadius: 6, cursor: subiendo ? 'not-allowed' : 'pointer', fontSize: 12,
+        borderRadius: 8, cursor: subiendo ? 'not-allowed' : 'pointer',
+        fontSize: mobile ? 15 : 12,
         color: subiendo ? '#58a6ff' : fotos.length === 0 ? '#f85149' : '#3fb950' }}>
         {subiendo ? '⏳ Subiendo...' : fotos.length === 0 ? '📷 Foto requerida — toca para subir' : '📷 + Añadir otra foto'}
         <input type="file" accept="image/*" capture="environment" onChange={handleFoto} disabled={subiendo} style={{ display: 'none' }} />
       </label>
-      {errorFoto && <div style={{ fontSize: 11, color: '#f85149', marginTop: 4 }}>{errorFoto}</div>}
+      {errorFoto && <div style={{ fontSize: mobile ? 13 : 11, color: '#f85149', marginTop: 6 }}>{errorFoto}</div>}
     </div>
   );
 }
 
 function CheckInterior({ nombre, value, onChange }) {
+  const mobile = isMobile();
   const esMalo = value?.estado === 'Mal';
   return (
-    <div style={{ borderBottom: '0.5px solid #21262d', paddingBottom: 10, marginBottom: 10 }}>
+    <div style={{ borderBottom: '0.5px solid #21262d', paddingBottom: 14, marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ flex: 1, fontSize: 13, color: '#e6edf3' }}>{nombre}</span>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <span style={{ flex: 1, fontSize: mobile ? 16 : 13, color: '#e6edf3' }}>{nombre}</span>
+        <div style={{ display: 'flex', gap: 8 }}>
           {['Bien', 'Mal'].map(op => (
             <button key={op} onClick={() => onChange({ estado: op, fotos: [] })}
-              style={{ padding: '3px 12px', borderRadius: 99, fontSize: 11, cursor: 'pointer', border: '0.5px solid',
+              style={{ padding: mobile ? '8px 18px' : '3px 12px', borderRadius: 99, fontSize: mobile ? 14 : 11, cursor: 'pointer', border: '0.5px solid',
                 background: value?.estado === op ? (op === 'Bien' ? 'rgba(63,185,80,0.15)' : 'rgba(248,81,73,0.15)') : 'transparent',
                 color: value?.estado === op ? (op === 'Bien' ? '#3fb950' : '#f85149') : '#8b949e',
                 borderColor: value?.estado === op ? (op === 'Bien' ? '#3fb950' : '#f85149') : '#21262d' }}>
@@ -96,23 +98,22 @@ function CheckInterior({ nombre, value, onChange }) {
           ))}
         </div>
       </div>
-      {esMalo && (
-        <FotosUpload fotos={value?.fotos || []} onChange={fotos => onChange({ ...value, fotos })} />
-      )}
+      {esMalo && <FotosUpload fotos={value?.fotos || []} onChange={fotos => onChange({ ...value, fotos })} />}
     </div>
   );
 }
 
 function CheckExterior({ nombre, value, onChange }) {
+  const mobile = isMobile();
   const esMalo = value?.estado === 'Mal';
   return (
-    <div style={{ borderBottom: '0.5px solid #21262d', paddingBottom: 10, marginBottom: 10 }}>
+    <div style={{ borderBottom: '0.5px solid #21262d', paddingBottom: 14, marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ flex: 1, fontSize: 13, color: '#e6edf3' }}>{nombre}</span>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <span style={{ flex: 1, fontSize: mobile ? 16 : 13, color: '#e6edf3' }}>{nombre}</span>
+        <div style={{ display: 'flex', gap: 8 }}>
           {['Bien', 'Mal'].map(op => (
             <button key={op} onClick={() => onChange({ estado: op, fotos: [], reportado: '' })}
-              style={{ padding: '3px 12px', borderRadius: 99, fontSize: 11, cursor: 'pointer', border: '0.5px solid',
+              style={{ padding: mobile ? '8px 18px' : '3px 12px', borderRadius: 99, fontSize: mobile ? 14 : 11, cursor: 'pointer', border: '0.5px solid',
                 background: value?.estado === op ? (op === 'Bien' ? 'rgba(63,185,80,0.15)' : 'rgba(248,81,73,0.15)') : 'transparent',
                 color: value?.estado === op ? (op === 'Bien' ? '#3fb950' : '#f85149') : '#8b949e',
                 borderColor: value?.estado === op ? (op === 'Bien' ? '#3fb950' : '#f85149') : '#21262d' }}>
@@ -124,12 +125,12 @@ function CheckExterior({ nombre, value, onChange }) {
       {esMalo && (
         <>
           <FotosUpload fotos={value?.fotos || []} onChange={fotos => onChange({ ...value, fotos })} />
-          <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 12, color: '#8b949e', marginBottom: 6 }}>¿Se ha reportado a responsable?</div>
-            <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: mobile ? 14 : 12, color: '#8b949e', marginBottom: 8 }}>¿Se ha reportado a responsable?</div>
+            <div style={{ display: 'flex', gap: 8 }}>
               {['Sí', 'No'].map(op => (
                 <button key={op} onClick={() => onChange({ ...value, reportado: op })}
-                  style={{ padding: '3px 14px', borderRadius: 99, fontSize: 11, cursor: 'pointer', border: '0.5px solid',
+                  style={{ padding: mobile ? '8px 24px' : '3px 14px', borderRadius: 99, fontSize: mobile ? 14 : 11, cursor: 'pointer', border: '0.5px solid',
                     background: value?.reportado === op ? 'rgba(88,166,255,0.15)' : 'transparent',
                     color: value?.reportado === op ? '#58a6ff' : '#8b949e',
                     borderColor: value?.reportado === op ? '#58a6ff' : '#21262d' }}>
@@ -145,15 +146,16 @@ function CheckExterior({ nombre, value, onChange }) {
 }
 
 function CheckRepuesto({ nombre, value, onChange }) {
+  const mobile = isMobile();
   const falta = value?.estado === 'Falta algún repuesto';
   return (
-    <div style={{ borderBottom: '0.5px solid #21262d', paddingBottom: 10, marginBottom: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ flex: 1, fontSize: 13, color: '#e6edf3' }}>{nombre}</span>
-        <div style={{ display: 'flex', gap: 6 }}>
+    <div style={{ borderBottom: '0.5px solid #21262d', paddingBottom: 14, marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <span style={{ flex: 1, fontSize: mobile ? 16 : 13, color: '#e6edf3', minWidth: 120 }}>{nombre}</span>
+        <div style={{ display: 'flex', gap: 8 }}>
           {['Están', 'Falta algún repuesto'].map(op => (
             <button key={op} onClick={() => onChange({ estado: op, fotos: [], queFalta: '', reportado: '' })}
-              style={{ padding: '3px 10px', borderRadius: 99, fontSize: 11, cursor: 'pointer', border: '0.5px solid', whiteSpace: 'nowrap',
+              style={{ padding: mobile ? '8px 14px' : '3px 10px', borderRadius: 99, fontSize: mobile ? 13 : 11, cursor: 'pointer', border: '0.5px solid', whiteSpace: 'nowrap',
                 background: value?.estado === op ? (op === 'Están' ? 'rgba(63,185,80,0.15)' : 'rgba(248,81,73,0.15)') : 'transparent',
                 color: value?.estado === op ? (op === 'Están' ? '#3fb950' : '#f85149') : '#8b949e',
                 borderColor: value?.estado === op ? (op === 'Están' ? '#3fb950' : '#f85149') : '#21262d' }}>
@@ -167,13 +169,13 @@ function CheckRepuesto({ nombre, value, onChange }) {
           <FotosUpload fotos={value?.fotos || []} onChange={fotos => onChange({ ...value, fotos })} />
           <input type="text" value={value?.queFalta || ''} onChange={e => onChange({ ...value, queFalta: e.target.value })}
             placeholder="¿Qué repuestos faltan?"
-            style={{ marginTop: 8, width: '100%', background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#e6edf3', boxSizing: 'border-box' }} />
-          <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 12, color: '#8b949e', marginBottom: 6 }}>¿Se ha reportado a responsable?</div>
-            <div style={{ display: 'flex', gap: 6 }}>
+            style={{ marginTop: 10, width: '100%', background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 8, padding: mobile ? '10px 12px' : '6px 10px', fontSize: mobile ? 15 : 12, color: '#e6edf3', boxSizing: 'border-box' }} />
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: mobile ? 14 : 12, color: '#8b949e', marginBottom: 8 }}>¿Se ha reportado a responsable?</div>
+            <div style={{ display: 'flex', gap: 8 }}>
               {['Sí', 'No'].map(op => (
                 <button key={op} onClick={() => onChange({ ...value, reportado: op })}
-                  style={{ padding: '3px 14px', borderRadius: 99, fontSize: 11, cursor: 'pointer', border: '0.5px solid',
+                  style={{ padding: mobile ? '8px 24px' : '3px 14px', borderRadius: 99, fontSize: mobile ? 14 : 11, cursor: 'pointer', border: '0.5px solid',
                     background: value?.reportado === op ? 'rgba(88,166,255,0.15)' : 'transparent',
                     color: value?.reportado === op ? '#58a6ff' : '#8b949e',
                     borderColor: value?.reportado === op ? '#58a6ff' : '#21262d' }}>
@@ -192,6 +194,7 @@ export default function NuevaAuditoria() {
   const { profile } = useAuth();
   const vehiculos   = useVehiculos();
   const config      = useConfig();
+  const mobile      = isMobile();
 
   const [busqueda,  setBusqueda]  = useState('');
   const [matricula, setMatricula] = useState('');
@@ -226,18 +229,12 @@ export default function NuevaAuditoria() {
       (i.estado === 'Mal' || i.estado === 'Falta algún repuesto') &&
       (!i.fotos || i.fotos.length === 0)
     );
-    if (sinFoto.length > 0) {
-      setError(`Faltan fotos en: ${sinFoto.map(i => i.nombre).join(', ')}`);
-      return;
-    }
+    if (sinFoto.length > 0) { setError(`Faltan fotos en: ${sinFoto.map(i => i.nombre).join(', ')}`); return; }
 
     setLoading(true); setError('');
     try {
       await addDoc(collection(db, `tenants/${TENANT_ID}/auditorias_limpieza`), {
-        matricula,
-        turno,
-        operario,
-        cargador,
+        matricula, turno, operario, cargador,
         auditor:   profile?.nombre || '',
         auditorId: profile?.uid || '',
         checklist: items,
@@ -254,41 +251,44 @@ export default function NuevaAuditoria() {
 
   if (done) return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-      <div style={{ fontSize: 64 }}>✅</div>
-      <div style={{ fontSize: 20, fontWeight: 500, color: '#e6edf3' }}>Auditoría guardada</div>
-      <div style={{ fontSize: 13, color: '#8b949e' }}>{matricula} · {turno} · {operario}</div>
+      <div style={{ fontSize: 80 }}>✅</div>
+      <div style={{ fontSize: mobile ? 22 : 20, fontWeight: 500, color: '#e6edf3' }}>Auditoría guardada</div>
+      <div style={{ fontSize: mobile ? 15 : 13, color: '#8b949e' }}>{matricula} · {turno} · {operario}</div>
     </div>
   );
 
-  return (
-    <div style={{ padding: '24px', maxWidth: 680, margin: '0 auto' }}>
-      <div style={{ fontSize: 20, fontWeight: 500, color: '#e6edf3', marginBottom: 20 }}>Nueva auditoría</div>
+  const fs = mobile ? 16 : 13;
+  const pad = mobile ? '12px 14px' : '10px 12px';
 
-      <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: 16, marginBottom: 12 }}>
-        <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Matrícula</div>
+  return (
+    <div style={{ padding: mobile ? '20px 16px' : '24px', maxWidth: 680, margin: '0 auto' }}>
+      {!mobile && <div style={{ fontSize: 20, fontWeight: 500, color: '#e6edf3', marginBottom: 20 }}>Nueva auditoría</div>}
+
+      <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: mobile ? 14 : 16, marginBottom: 12 }}>
+        <div style={{ fontSize: mobile ? 12 : 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Matrícula</div>
         <input type="text" value={busqueda} onChange={e => { setBusqueda(e.target.value.toUpperCase()); setMatricula(''); }}
           placeholder="Escribe la matrícula..."
-          style={{ width: '100%', background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: '#e6edf3', boxSizing: 'border-box' }} />
+          style={{ width: '100%', background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 8, padding: pad, fontSize: mobile ? 18 : 14, color: '#e6edf3', boxSizing: 'border-box' }} />
         {vehiculosFiltrados.length > 0 && !matricula && (
           <div style={{ background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 8, marginTop: 4, overflow: 'hidden' }}>
             {vehiculosFiltrados.map(v => (
               <button key={v.id} onClick={() => { setMatricula(v.matricula); setBusqueda(v.matricula); }}
-                style={{ width: '100%', textAlign: 'left', padding: '10px 12px', fontSize: 13, color: '#e6edf3', background: 'none', border: 'none', borderBottom: '0.5px solid #21262d', cursor: 'pointer' }}>
+                style={{ width: '100%', textAlign: 'left', padding: mobile ? '14px 12px' : '10px 12px', fontSize: fs, color: '#e6edf3', background: 'none', border: 'none', borderBottom: '0.5px solid #21262d', cursor: 'pointer' }}>
                 <span style={{ fontFamily: 'monospace' }}>{v.matricula}</span>
-                <span style={{ color: '#8b949e', marginLeft: 8, fontSize: 12 }}>{v.marca} {v.modelo}</span>
+                <span style={{ color: '#8b949e', marginLeft: 8, fontSize: mobile ? 14 : 12 }}>{v.marca} {v.modelo}</span>
               </button>
             ))}
           </div>
         )}
-        {matricula && <div style={{ marginTop: 6, fontSize: 12, color: '#3fb950' }}>✓ {matricula} seleccionada</div>}
+        {matricula && <div style={{ marginTop: 6, fontSize: mobile ? 14 : 12, color: '#3fb950' }}>✓ {matricula} seleccionada</div>}
       </div>
 
-      <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: 16, marginBottom: 12 }}>
-        <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Turno</div>
+      <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: mobile ? 14 : 16, marginBottom: 12 }}>
+        <div style={{ fontSize: mobile ? 12 : 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Turno</div>
         <div style={{ display: 'flex', gap: 8 }}>
           {TURNOS.map(t => (
             <button key={t} onClick={() => { setTurno(t); setOperario(''); }}
-              style={{ flex: 1, padding: '10px', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: '0.5px solid',
+              style={{ flex: 1, padding: mobile ? '12px 8px' : '10px', borderRadius: 8, fontSize: mobile ? 15 : 13, cursor: 'pointer', border: '0.5px solid',
                 background: turno === t ? 'rgba(88,166,255,0.15)' : 'transparent',
                 color: turno === t ? '#58a6ff' : '#8b949e',
                 borderColor: turno === t ? '#58a6ff' : '#21262d' }}>
@@ -299,28 +299,28 @@ export default function NuevaAuditoria() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-        <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Operario de limpieza</div>
+        <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: mobile ? 14 : 16 }}>
+          <div style={{ fontSize: mobile ? 12 : 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Operario</div>
           <select value={operario} onChange={e => setOperario(e.target.value)} disabled={!turno}
-            style={{ width: '100%', background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: operario ? '#e6edf3' : '#8b949e', opacity: turno ? 1 : 0.5 }}>
-            <option value="">{turno ? 'Seleccionar...' : 'Selecciona turno primero'}</option>
+            style={{ width: '100%', background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 8, padding: pad, fontSize: fs, color: operario ? '#e6edf3' : '#8b949e', opacity: turno ? 1 : 0.5 }}>
+            <option value="">{turno ? 'Seleccionar...' : 'Turno primero'}</option>
             {operariosFiltrados.map(o => <option key={o.id} value={o.nombre}>{o.nombre}</option>)}
           </select>
         </div>
-        <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Cargador</div>
+        <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: mobile ? 14 : 16 }}>
+          <div style={{ fontSize: mobile ? 12 : 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Cargador</div>
           <select value={cargador} onChange={e => setCargador(e.target.value)}
-            style={{ width: '100%', background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: cargador ? '#e6edf3' : '#8b949e' }}>
+            style={{ width: '100%', background: '#0d1117', border: '0.5px solid #21262d', borderRadius: 8, padding: pad, fontSize: fs, color: cargador ? '#e6edf3' : '#8b949e' }}>
             <option value="">Seleccionar...</option>
             {config.cargadores.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
           </select>
         </div>
       </div>
 
-      <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+      <div style={{ background: '#161b22', border: '0.5px solid #21262d', borderRadius: 12, padding: mobile ? 14 : 16, marginBottom: 12 }}>
         {config.interior.length > 0 && (
           <>
-            <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Interior</div>
+            <div style={{ fontSize: mobile ? 12 : 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Interior</div>
             {config.interior.map(item => (
               <CheckInterior key={item.id} nombre={item.nombre}
                 value={getItem('interior', item.nombre)}
@@ -330,7 +330,7 @@ export default function NuevaAuditoria() {
         )}
         {config.exterior.length > 0 && (
           <>
-            <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, margin: '12px 0' }}>Exterior</div>
+            <div style={{ fontSize: mobile ? 12 : 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, margin: '14px 0' }}>Exterior</div>
             {config.exterior.map(item => (
               <CheckExterior key={item.id} nombre={item.nombre}
                 value={getItem('exterior', item.nombre)}
@@ -340,7 +340,7 @@ export default function NuevaAuditoria() {
         )}
         {config.repuestos.length > 0 && (
           <>
-            <div style={{ fontSize: 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, margin: '12px 0' }}>Repuestos</div>
+            <div style={{ fontSize: mobile ? 12 : 11, color: '#8b949e', textTransform: 'uppercase', letterSpacing: 1, margin: '14px 0' }}>Repuestos</div>
             {config.repuestos.map(item => (
               <CheckRepuesto key={item.id} nombre={item.nombre}
                 value={getItem('repuestos', item.nombre)}
@@ -349,16 +349,16 @@ export default function NuevaAuditoria() {
           </>
         )}
         {config.interior.length === 0 && config.exterior.length === 0 && config.repuestos.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 13, color: '#8b949e' }}>
+          <div style={{ textAlign: 'center', padding: '20px 0', fontSize: fs, color: '#8b949e' }}>
             Configura el checklist en Configuración antes de auditar
           </div>
         )}
       </div>
 
-      {error && <div style={{ background: 'rgba(248,81,73,0.1)', border: '0.5px solid rgba(248,81,73,0.3)', color: '#f85149', fontSize: 12, padding: '10px 14px', borderRadius: 8, marginBottom: 12 }}>{error}</div>}
+      {error && <div style={{ background: 'rgba(248,81,73,0.1)', border: '0.5px solid rgba(248,81,73,0.3)', color: '#f85149', fontSize: mobile ? 14 : 12, padding: '12px 14px', borderRadius: 8, marginBottom: 12 }}>{error}</div>}
 
       <button onClick={handleSubmit} disabled={loading}
-        style={{ width: '100%', background: loading ? '#21262d' : '#58a6ff', color: loading ? '#8b949e' : '#fff', fontWeight: 600, fontSize: 15, padding: '14px 0', borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer' }}>
+        style={{ width: '100%', background: loading ? '#21262d' : '#58a6ff', color: loading ? '#8b949e' : '#fff', fontWeight: 600, fontSize: mobile ? 17 : 15, padding: mobile ? '16px 0' : '14px 0', borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer' }}>
         {loading ? 'Guardando...' : 'Guardar auditoría'}
       </button>
     </div>

@@ -2,13 +2,42 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const NAV = [
-  { to: '/',       icon: '📋', label: 'Nueva auditoría' },
+  { to: '/',       icon: '📋', label: 'Auditoría' },
   { to: '/panel',  icon: '📊', label: 'Panel' },
-  { to: '/config', icon: '⚙️', label: 'Configuración' },
+  { to: '/config', icon: '⚙️', label: 'Config' },
 ];
+
+function useIsMobile() {
+  return window.innerWidth < 768;
+}
 
 export default function Layout({ children }) {
   const { profile, logout } = useAuth();
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0d1117', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 70 }}>
+          {children}
+        </div>
+        <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#161b22', borderTop: '0.5px solid #21262d', display: 'flex', zIndex: 100 }}>
+          {NAV.map(({ to, icon, label }) => (
+            <NavLink key={to} to={to} end={to === '/'}
+              style={({ isActive }) => ({
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                padding: '10px 0 8px', textDecoration: 'none', gap: 3,
+                color: isActive ? '#58a6ff' : '#8b949e',
+                borderTop: `2px solid ${isActive ? '#58a6ff' : 'transparent'}`,
+              })}>
+              <span style={{ fontSize: 20 }}>{icon}</span>
+              <span style={{ fontSize: 10 }}>{label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0d1117] flex">
